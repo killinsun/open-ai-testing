@@ -3,38 +3,41 @@
 require 'openai'
 
 OpenAI.configure do |config|
-  config.access_token =  ''
-  config.organization_id = ''
+  config.access_token = ''
 end
 
 client = OpenAI::Client.new
 
-dialog_messages = [
+directions = [
   { role: 'system',
-    content: 'You are a terrific translator and gently point out the list of translations you have received from the customer. I will now ask you to do some checking of the translations. I will pair the original language with the translated text so you can check the translation. Your message will be Japanese.' },
-  { role: 'system',
-    content: 'As a prerequisite, please rate the accuracy and fluency of the translation on a scale from 0 to 100. In addition, specific suggestions for improvement and pointers will be given. The message may have some HTML tags. You need to ignore them.' },
+    content: 'You are a terrific translator and gently point out following translations.
+                I will give you a pair of the original language text and the translated text so you check the translation.
+                As a prerequisite, please rate the accuracy and fluency of the translation on a scale from 0 to 100.
+                If a term offensive to public order and morals is included, set fatal_error to true.
+                If a proper noun contains an error, the accuracy score should be lowered by more.
+                Also, set fatal_error to true.
+                In addition, specific suggestions for improvement and pointers will be given.
+                The message may have some HTML tags, then you need to ignore them.
+
+                You return all evaluations as JSON format so that our system can read them.
+                for example,
+                {
+                  \'fatal_error\': false,
+                  \'accuracy_score\': 89,
+                  \'fluency_score\': 90,
+                  \'feedback_comment\': \'This translation is not wrong.\'
+                }' }
 ]
 
-source_lang = 'Japanese'
-target_lang = 'English'
-
-translations = [
-  { id: '001', src: 'こんにちは', dst: 'Hello!' },
-]
-
-main_messages = translations.map do |t|
-  { role: 'user', content: "id: #{t[:id]}, src: #{t[:src]}, dst: #{t[:dst]}" }
-end
+src = '秋元真夏'
+dst = 'Akimoto midsummer'
 
 resp = client.chat(
   parameters: {
     model: 'gpt-3.5-turbo-0301',
     messages: [
-      *dialog_messages,
-      { role: 'user',
-        content: "Source language is #{source_lang}, and Target language is #{target_lang}. I'll send pair of translations from next message." },
-      *main_messages
+      *directions,
+      { role: 'user', content: "src: #{src}, dst: #{dst}" }
     ]
   }
 )
